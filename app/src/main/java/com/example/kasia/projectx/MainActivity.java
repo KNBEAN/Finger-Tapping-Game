@@ -249,15 +249,7 @@ public class MainActivity extends Activity{
 
                 frequency.setText(Float.toString(mFrequencyValue));
 
-               /* byte[] parsedData = ByteBuffer.allocate(4).putFloat(mFrequencyValue).array();
-                byte[] output = new byte[5];
-                output[0] = 3;
-                int i = 1;
-                for (byte temp : parsedData) {
-                    output[i++] = temp;
-                }
-                mBluetoothConnectionService.write(output);*/
-                //MessageCreator.createFrequencyMessage(mFrequencyValue, mBluetoothConnectionService);
+                mBluetoothConnectionService.write(convertFloatToBytes(mFrequencyValue));
 
                 lineList.add(((double) mseconds/10) + "," +counter+","+ mFrequencyValue);
 
@@ -346,6 +338,17 @@ public class MainActivity extends Activity{
         intent.putStringArrayListExtra(SecondActivity.MY_MESSAGE,(ArrayList<String>)lineList);
         startActivity(intent);
 
+    }
+
+    private byte[] convertFloatToBytes(float value) {
+        byte[] parsedData = ByteBuffer.allocate(4).putFloat(value).array();
+        byte[] output = new byte[5];
+        output[0] = 3;
+        int i = 1;
+        for (byte temp : parsedData) {
+            output[i++] = temp;
+        }
+        return output;
     }
 
 }
