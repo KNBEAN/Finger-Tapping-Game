@@ -14,12 +14,39 @@ import android.bluetooth.BluetoothDevice;
  * Created by kfojc on 28.02.2018.
  */
 
+/**
+ * Klasa implementująca adapter do Listview, wyświetlający nazwę i MAC adres.
+ *
+ * @author kfojcik
+ * @version 1.0
+ */
+
+
 public class DeviceListAdapter extends ArrayAdapter<BluetoothDevice> {
 
+    /**
+     * zmienna używana do stworzenia widoku
+     */
     private LayoutInflater mLayoutInflater;
+
+    /**
+     * lista urządzeń Bluetooth
+     */
     private ArrayList<BluetoothDevice> mDevices;
+
+    /**
+     * id zasobów
+     */
     private int  mViewResourceId;
 
+    /**
+     * Konstruktor argumentowy.
+     *
+     * @param context Obiekt klasy Context do komunikacji ze środowiskiem, w którym została
+     *                uruchomiona aplikacja
+     * @param tvResourceId id zasobów
+     * @param devices lista urządzeń Bluetooth
+     */
     public DeviceListAdapter(Context context, int tvResourceId, ArrayList<BluetoothDevice> devices){
         super(context, tvResourceId,devices);
         this.mDevices = devices;
@@ -27,6 +54,15 @@ public class DeviceListAdapter extends ArrayAdapter<BluetoothDevice> {
         mViewResourceId = tvResourceId;
     }
 
+    /**
+     * Metoda przysłaniająca metodę getView klasy Adapter;
+     * zwracająca widok poszczegółnych urządzeń na liście - nazwa, MAC adres
+     * @param position pozycja urzadzenia na liscie
+     * @param convertView widok
+     * @param parent grupa widoków, do którego przywiązany jest widok
+     * @return widok po dodaniu danego urządzenia
+     */
+    @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         convertView = mLayoutInflater.inflate(mViewResourceId, null);
 
