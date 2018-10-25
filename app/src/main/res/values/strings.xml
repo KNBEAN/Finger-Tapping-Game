@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">ProjectX</string>
+    <string name="freq">Your freq</string>
+    <string name="timeinfo">time</string>
+    <string name="mesTime">BLUETOOTH CONNECTION</string>
+    <string name="bob">Bob freq</string>
+    <string name="start">START</string>
+    <string name="left">L</string>
+    <string name="right">R</string>
+    <string name="save">SAVE</string>
+    <string name="back">BACK</string>
+    <string name="saveInfo">Enter a filename to save data</string>
+    <string name="filename">myFile.csv</string>
+</resources>
