@@ -25,52 +25,165 @@ import java.util.Locale;
 
 public class MainActivity extends Activity{
 
+    /**
+     * dziesiętne sekundy odliczane w runTime()
+     */
     private int mseconds=0;
-    private boolean running=false;
-    private boolean start=false;
-    private SeekBar timeSeek;
+
+    /**
+     * licznik tapnięć
+     */
     private int counter=0;
+
+    /**
+     * zmienna opisująca ostatnio kliknięty przycisk
+     */
     private int mPreviousClickedButton = -1; // -1: before start, 0:left button, 1:right button
+
+    /**
+     * limit czasu pomiaru
+     */
     private int timeLimit;
+
+    /**
+     * TextView z informacją o częstotliwości przeciwnika
+     */
     private TextView bobFreq;
+
+    /**
+     * TextView z informacją o częstotliwości gracza
+     */
     private TextView frequency;
+
+    /**
+     * TextView z informacją o pozostałym czasie pomiaru
+     */
     private TextView timeView;
-    private TextView seemTime;
+
+    /**
+     * TextView z informacją o wygranej lub przegranej przeciwnika (WINNER/LOSER)
+     */
     private TextView Bob;
+
+    /**
+     * TextView z informacją o wygranej lub przegranej gracza (WINNER/LOSER)
+     */
     private TextView You;
-    int step;
-    int max;
-    int min;
+
+
+    /**
+     * obliczana częstotliwość gracza
+     */
     float mFrequencyValue;
+
+
+    /**
+     * animacja poruszających się fal
+     */
     final ValueAnimator animator = ValueAnimator.ofFloat(0.0f, 1.0f);
+
+    /**
+     * obrazek z czerwonym wioslarzem
+     */
     private ImageView rower1;
+
+    /**
+     * obrazek z czarnym wioslarzem
+     */
     private ImageView rower2;
+
+    /**
+     * mediaPlayer do odtworzenia dźwięku wygranej/przegranej
+     */
     MediaPlayer sound;
+
+    /**
+     * lista parametrów do zapisu w pliku // obecnie nieużywany
+     */
     private List<String> lineList = new ArrayList<>();
+
+    /**
+     * przycisk do zapisu pliku //obecnie nieużywany
+     */
     private Button saveBtn;
+
+    /**
+     * obiekt klasy BluetoothConnectionService
+     */
     private BluetoothConnectionService mBluetoothConnectionService;
+
+    /**
+     * stała z wartością przypisaną prawemu przyciskowi
+     */
     public static final byte RIGHT_BYTE_VALUE = 55;
+
+    /**
+     * stała z wartością przypisaną lewemu przyciskowi
+     */
     public static final byte LEFT_BYTE_VALUE = 65;
+
+    /**
+     * lewy przycisk do Finger Tapping Test
+     */
     private Button mLeftButton;
+
+    /**
+     * prawy przycisk do Finger Tapping Test
+     */
     private Button mRightButton;
+
+    /**
+     * obiekt klasy Dialog
+     */
     private Dialog dialog;
 
+    /**
+     * odbierana i "odszyfrowana" wartość częstotliwości przeciwnika
+     */
+    private float mBobFreqValue;
 
+    /**
+     * przycisk START do rozpoczęcia gry
+     */
+    private Button mStartBtn;
+    private Button connectBtn;
+    private ImageView winner;
+    private ImageView loser;
+
+
+
+    /**
+     * obiekt klasy CountDownTimer do odliczania czasu od naciśnięcia przycisku START do rozpoczęcia gry
+     */
     private CountDownTimer mCountDownTimer = new CountDownTimer(4000, 1000) {
+        /**
+         * metoda wywoływana co zadany odstęp czasu (countDownInterval)
+         */
         @Override
         public void onTick(long l) {
-            seemTime.setText(Long.toString(l/1000));
+            mStartBtn.setText(Long.toString(l/1000));
         }
 
+        /**
+         * metoda wywoływana po upływie zadanego czasu (millisInFuture)
+         */
         @Override
         public void onFinish() {
-            seemTime.setText("0");
+            mStartBtn.setText("0");
             startRace();
         }
     };
 
 
+    /**
+     * Obiekt anonimowej klasy ActivityCallback, implementujący metody interfejsu
+     */
     private ActivityCallback mActivityCallback = new ActivityCallback() {
+
+        /**
+         * Metoda obsługująca bajty przekazane z obiektu BluetoothConnectionService
+         * @param data tablica bajtów
+         */
         @Override
         public void setReceivedBytes(final byte[] data) {
             switch(data[0]) {
@@ -86,8 +199,8 @@ public class MainActivity extends Activity{
                     moveRower(data);
                     break;
                 case 3:
-                    float f = ByteBuffer.wrap(Arrays.copyOfRange(data, 1, 5)).getFloat();
-                    final String newFreq = Float.toString(f);
+                    mBobFreqValue = ByteBuffer.wrap(Arrays.copyOfRange(data, 1, 5)).getFloat();
+                    final String newFreq = Float.toString(mBobFreqValue);
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -99,6 +212,11 @@ public class MainActivity extends Activity{
             }
 
         }
+
+        /**
+         * Metoda do animacji wioślarza
+         * @param data tablica bajtów
+         */
         private void moveRower(final byte[] data) {
             runOnUiThread(new Runnable() {
 
@@ -114,16 +232,28 @@ public class MainActivity extends Activity{
             });
         }
 
+        /**
+         * Metoda ustawiająca instancję BluetoothConnectionService; przypisuje referencję do obiektu, który nawiązał połaczenie z 2. urzadzeniem
+         * @param instance obiekt klasy BluetoothConnectionService
+         */
         @Override
         public void setBlueToothConnectionInstance(BluetoothConnectionService instance) {
             mBluetoothConnectionService = instance;
         }
 
+        /**
+         * Metoda zamykjąca okno dialogowe
+         */
         @Override
         public void dismissConnectionDialog() {
             dialog.dismiss();
         }
 
+        /**
+         * Metoda ustawiająca status połączenia; rozważane przypadki CONNECTED/DISCONNECTED
+         * manipuluje widocznością przycisku START
+         * @param status enum z możliwymi statusami połączenia
+         */
         @Override
         public void setConnectionStatus(final BluetoothConnectionService.ConnectionStatus status) {
             runOnUiThread(new Runnable() {
@@ -132,9 +262,11 @@ public class MainActivity extends Activity{
                     switch (status) {
                         case CONNECTED:
                             Toast.makeText(MainActivity.this, "Connected",Toast.LENGTH_LONG).show();
+                            mStartBtn.setEnabled(true);
                             break;
                         case DISCONNECTED:
                             Toast.makeText(MainActivity.this, "Disconnected",Toast.LENGTH_LONG).show();
+                            mStartBtn.setEnabled(false);
                             break;
                     }
 
@@ -144,6 +276,11 @@ public class MainActivity extends Activity{
 
     };
 
+
+    /**
+     * Metoda, do inicjalizacji Głównej Aktywności; budowanie interfejsu użytkownika, powiązananie danych z kontrolerami
+     * @param savedInstanceState obiekt klasy Bundle; zapisany stan instancji
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -154,56 +291,27 @@ public class MainActivity extends Activity{
         frequency = (TextView) findViewById(R.id.frequency);
         timeView = (TextView) findViewById(R.id.time);
 
-        timeView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                dialog = new ConnectionDialog(MainActivity.this, mActivityCallback);
-                dialog.show();
-            }
-        });
+
 
         mRightButton = (Button) findViewById(R.id.RightBtn);
         mLeftButton = (Button) findViewById(R.id.LeftBtn);
-
+        mStartBtn = (Button) findViewById(R.id.startBtn);
+        mStartBtn.setEnabled(false);
         mRightButton.setEnabled(false);
         mLeftButton.setEnabled(false);
+        connectBtn = (Button) findViewById(R.id.connectBtn);
 
-        seemTime =(TextView) findViewById(R.id.mTime);
+
         Bob = (TextView) findViewById(R.id.BOB);
         You = (TextView) findViewById(R.id.You);
         saveBtn = (Button) findViewById(R.id.saveBtn);
 
         frequency.setText("0.0");
-        bobFreq.setText("10.0");
+        bobFreq.setText("0.0");
         timeView.setText("00.0");
         saveBtn.setVisibility(View.INVISIBLE);
 
-        step=5;
-        max=20;
-        min=5;
-
-        timeSeek= (SeekBar) findViewById(R.id.timeSeek);
-        timeSeek.setMax((max-min)/step);
-        //timeSeek.incrementProgressBy(10);
-        timeSeek.setProgress(1);
         timeLimit=10;
-        seemTime.setText("10");
-
-        timeSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
-
-                int value = min+ (progress*step);
-                timeLimit=value;
-                seemTime.setText(Integer.toString(timeLimit));
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {}
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {}
-        });
 
         final ImageView backgroundOne = (ImageView) findViewById(R.id.background1);
         final ImageView backgroundTwo = (ImageView) findViewById(R.id.background2);
@@ -226,6 +334,8 @@ public class MainActivity extends Activity{
 
         rower1 = (ImageView)findViewById(R.id.rower1b);
         rower2 = (ImageView)findViewById(R.id.rower1);
+        winner = (ImageView) findViewById(R.id.winnerImage);
+        loser = (ImageView) findViewById(R.id.loserImage);
 
     }
 
@@ -257,23 +367,32 @@ public class MainActivity extends Activity{
 
 
                 if (sec==timeLimit){
-                    running=false;
-                    start=false;
+                    mStartBtn.setEnabled(true);
+                    mStartBtn.setText("START");
+                    mPreviousClickedButton = -1;
+                    mRightButton.setEnabled(false);
+                    mLeftButton.setEnabled(false);
                     mseconds=0;
                     counter=0;
                     animator.pause();
                     saveBtn.setVisibility(View.VISIBLE);
+                    mStartBtn.setVisibility(View.INVISIBLE);
+                    mLeftButton.setVisibility(View.INVISIBLE);
+                    mRightButton.setVisibility(View.INVISIBLE);
+                    connectBtn.setVisibility(View.INVISIBLE);
 
-                    if(mFrequencyValue >10){
-                        You.setText("WINNER");
-                        Bob.setText("LOSER");
+                    if(mFrequencyValue > mBobFreqValue){
+                       // You.setText("WINNER");
+                       // Bob.setText("LOSER");
                         sound= MediaPlayer.create(MainActivity.this,R.raw.winsound);
+                        winner.setVisibility(View.VISIBLE);
                         sound.start();
                     }
                     else{
-                        Bob.setText("WINNER");
-                        You.setText("LOSER");
+                       // Bob.setText("WINNER");
+                       // You.setText("LOSER");
                         sound= MediaPlayer.create(MainActivity.this,R.raw.failsound);
+                        loser.setVisibility(View.VISIBLE);
                         sound.start();
                     }
                     return;
@@ -295,8 +414,15 @@ public class MainActivity extends Activity{
         mCountDownTimer.start();
     }
     public void OnClickStartBtn(View view) {
+        mStartBtn.setEnabled(false);
+        //wysyłanie komendy start
         mBluetoothConnectionService.write(new byte[] {1, 0, 0, 0, 0});
         start();
+    }
+
+    public void OnClickConnectBtn(View view){
+        dialog = new ConnectionDialog(MainActivity.this, mActivityCallback);
+        dialog.show();
     }
     private void startRace() {
         mLeftButton.setEnabled(true);
@@ -333,6 +459,14 @@ public class MainActivity extends Activity{
     }
 
     public void OnClickSaveBtn(View view){
+
+        saveBtn.setVisibility(View.INVISIBLE);
+        mStartBtn.setVisibility(View.VISIBLE);
+        mLeftButton.setVisibility(View.VISIBLE);
+        mRightButton.setVisibility(View.VISIBLE);
+        connectBtn.setVisibility(View.VISIBLE);
+        winner.setVisibility(View.INVISIBLE);
+        loser.setVisibility(View.INVISIBLE);
 
         Intent intent = new Intent(this,SecondActivity.class);
         intent.putStringArrayListExtra(SecondActivity.MY_MESSAGE,(ArrayList<String>)lineList);

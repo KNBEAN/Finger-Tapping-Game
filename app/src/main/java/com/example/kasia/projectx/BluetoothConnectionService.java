@@ -13,9 +13,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.UUID;
 
-/**
- * Created by kfojc on 27.02.2018.
- */
+
 public class BluetoothConnectionService {
 
     public enum ConnectionStatus{
@@ -50,19 +48,22 @@ public class BluetoothConnectionService {
 
 
     /**
-     * This thread runs while listening for incoming connections. It behaves
-     * like a server-side client. It runs until a connection is accepted
-     * (or until cancelled).
+     Ten wątek jest uruchamiany podczas nasłuchiwania połączeń przychodzących.
+     Działa, dopóki połączenie nie zostanie zaakceptowane (lub do momentu anulowania).
      */
     private class AcceptThread extends Thread {
 
-        // The local server socket
+        /**
+         * Gniazdo lokalnego serwera
+         */
         private final BluetoothServerSocket mmServerSocket;
 
         public AcceptThread() {
             BluetoothServerSocket tmp = null;
 
-            // Create a new listening server socket
+            /**
+             * Tworzenie nowego nasłuchującego gniazda serwera
+             */
             try {
                 tmp = mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(APP_NAME, MY_UUID_INSECURE);
 
@@ -80,8 +81,11 @@ public class BluetoothConnectionService {
             BluetoothSocket socket = null;
 
             try {
-                // This is a blocking call and will only return on a
-                // successful connection or an exception
+                /**
+                 * Wyywołanie blokujące; zostanie zwrócone tylko w przypadku
+                 * udanego połączenia lub wyjątku
+                 */
+
                 Log.d(TAG, "run: RFCOM server socket start.....");
 
                 socket = mmServerSocket.accept();
@@ -111,9 +115,8 @@ public class BluetoothConnectionService {
     }
 
     /**
-     * This thread runs while attempting to make an outgoing connection
-     * with a device. It runs straight through; the connection either
-     * succeeds or fails.
+     Ten wątek jest uruchamiany podczas próby nawiązania połączenia wychodzącego z urządzenia.
+     Biegnie prosto; połączenie się udaje lub nie.
      */
     private class ConnectThread extends Thread {
         private BluetoothSocket mmSocket;
@@ -128,8 +131,9 @@ public class BluetoothConnectionService {
             BluetoothSocket tmp = null;
             Log.i(TAG, "RUN mConnectThread ");
 
-            // Get a BluetoothSocket for a connection with the
-            // given BluetoothDevice
+            /**
+             * Uzyskanie gniazda Bluetooth dla połączenia z danym urządzeniem Bluetooth
+             */
             try {
                 Log.d(TAG, "ConnectThread: Trying to create InsecureRfcommSocket using UUID: "
                         + MY_UUID_INSECURE);
@@ -140,19 +144,26 @@ public class BluetoothConnectionService {
 
             mmSocket = tmp;
 
-            // Always cancel discovery because it will slow down a connection
+            /**
+             * Anulowanie wykrywania, ponieważ spowolni to połączenie
+             */
             mBluetoothAdapter.cancelDiscovery();
 
-            // Make a connection to the BluetoothSocket
+            /**
+             * Nawiązanie połączenia z gniazdem Bluetooth
+             */
 
             try {
-                // This is a blocking call and will only return on a
-                // successful connection or an exception
+                /**
+                 * Jest to wywołanie blokujące i zostanie zwrócone tylko w przypadku udanego połączenia lub wyjątku
+                 */
                 mmSocket.connect();
 
                 Log.d(TAG, "run: ConnectThread connected.");
             } catch (IOException e) {
-                // Close the socket
+                /**
+                 * Zamknięcie gniazda
+                 */
                 try {
                     mmSocket.close();
                     Log.d(TAG, "run: Closed Socket.");
@@ -162,7 +173,7 @@ public class BluetoothConnectionService {
                 Log.d(TAG, "run: ConnectThread: Could not connect to UUID: " + MY_UUID_INSECURE);
             }
 
-            //will talk about this in the 3rd video
+
             connected(mmSocket, mmDevice);
         }
 
@@ -178,13 +189,16 @@ public class BluetoothConnectionService {
 
 
     /**
-     * Start the chat service. Specifically start AcceptThread to begin a
-     * session in listening (server) mode. Called by the Activity onResume()
-     */
+     * Uruchamianie "usługi". W szczególności uruchamianie AcceptThread, aby rozpocząć sesję
+     * w trybie nasłuchu (serwer). Wywoływane przez działanie onResume()
+     **/
     public synchronized void start() {
         Log.d(TAG, "start");
 
-        // Cancel any thread attempting to make a connection
+        /**
+         Anulowanie dowolnego wątku próbującego nawiązać połączenie
+         */
+        //
         if (mConnectThread != null) {
             mConnectThread.cancel();
             mConnectThread = null;
@@ -196,14 +210,17 @@ public class BluetoothConnectionService {
     }
 
     /**
-     * AcceptThread starts and sits waiting for a connection.
-     * Then ConnectThread starts and attempts to make a connection with the other devices AcceptThread.
+     * Uruchomienie AcceptThread i czekanie na połączenie.
+     * Następnie uruchomienie ConnectThread i próba nawiązania połączenia
+     * z innymi urządzeniami AcceptThread.
      **/
 
     public void startClient(BluetoothDevice device, UUID uuid) {
         Log.d(TAG, "startClient: Started.");
 
-        //initprogress dialog
+        /**
+         * okno dialogowe postępu inicjalizacji
+         **/
         mProgressDialog = ProgressDialog.show(mContext, "Connecting Bluetooth"
                 , "Please Wait...", true);
 
@@ -212,8 +229,9 @@ public class BluetoothConnectionService {
     }
 
     /**
-     * Finally the ConnectedThread which is responsible for maintaining the BTConnection, Sending the data, and
-     * receiving incoming data through input/output streams respectively.
+     * ConnectedThread odpowiedzialny jest za utrzymywanie połączenia Bluetooth,
+     * wysyłanie danych i odbieranie przychodzących danych odpowiednio przez
+     * strumienie wejściowe / wyjściowe.
      **/
     private class ConnectedThread extends Thread {
         private final BluetoothSocket mmSocket;
@@ -226,8 +244,9 @@ public class BluetoothConnectionService {
             mmSocket = socket;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
-
-            //dismiss the progressdialog when connection is established
+            /**
+             * odrzucanie dialogu postępu po ustanowieniu połączenia
+             **/
             try {
                 mProgressDialog.dismiss();
             } catch (NullPointerException e) {
@@ -249,15 +268,22 @@ public class BluetoothConnectionService {
         public void run() {
             byte[] buffer = new byte[5];  // buffer store for the stream
 
-            int bytes; // bytes returned from read()
+            /**
+             * bajty zwrócone z read()
+             **/
+            int bytes;
 
-            // Keep listening to the InputStream until an exception occurs
+            /**
+             * Nasłuchiwanie strumienia wejściowego (InputStream) do momentu wystąpienia wyjątku
+             **/
             while (true) {
-                // Read from the InputStream
+                /**
+                 * Czytanie ze strumienia wejściowego
+                 **/
                 try {
                     bytes = mmInStream.read(buffer);
                     Log.d(TAG, "Bytes received " + bytes +" bytes: " +buffer);
-                    mCallback.setReceivedBytes(buffer);
+                    mCallback.setReceivedBytes(buffer); // wysyłanie bajtów do callbacka w main activity
                 } catch (IOException e) {
                     Log.e(TAG, "write: Error reading Input Stream. " + e.getMessage());
                     mCallback.setConnectionStatus(ConnectionStatus.DISCONNECTED);
@@ -265,8 +291,9 @@ public class BluetoothConnectionService {
                 }
             }
         }
-
-        //Call this from the main activity to send data to the remote device
+        /**
+         * Wywołanie z głównej aktywności, aby wysłać dane do zdalnego urządzenia
+         **/
         public void write(byte[] bytes) {
             Log.d(TAG, "write: Writing to outputstream: " + bytes);
             try {
@@ -277,7 +304,9 @@ public class BluetoothConnectionService {
             }
         }
 
-        /* Call this from the main activity to shutdown the connection */
+        /**
+         * Wywołanie z głównej aktywności, aby zamknąć połączenie
+         **/
         public void cancel() {
             try {
                 mmSocket.close();
@@ -291,7 +320,9 @@ public class BluetoothConnectionService {
         mCallback.setConnectionStatus(ConnectionStatus.CONNECTED);
         mCallback.setBlueToothConnectionInstance(this);
         mCallback.dismissConnectionDialog();
-        // Start the thread to manage the connection and perform transmissions
+        /**
+         * Uruchamianie wątku, aby zarządzać połączeniem i wykonywać transmisje
+         **/
         mConnectedThread = new ConnectedThread(mmSocket);
         mConnectedThread.start();
     }
@@ -304,7 +335,9 @@ public class BluetoothConnectionService {
      */
     public void write(byte[] out) {
         Log.d(TAG, "write: Write Called.");
-        //perform the write
+        /**
+         * wykonywanie zapisu
+         **/
         mConnectedThread.write(out);
     }
 
